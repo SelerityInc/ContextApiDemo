@@ -30,8 +30,11 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 
 /**
@@ -55,6 +58,11 @@ public class RequestUtils {
   private final String apiServerRootUrl;
 
   /**
+   * User agent to use for requests.
+   */
+  private final String userAgent;
+
+  /**
    * Constructs RequestUtils for a given Context API endpoint.
    * 
    * @param apiServerRootUrl The Context API endpoint to use for requests. Has to contain both
@@ -63,6 +71,27 @@ public class RequestUtils {
    */
   public RequestUtils(String apiServerRootUrl) {
     this.apiServerRootUrl = apiServerRootUrl;
+    this.userAgent = getUserAgent();
+  }
+
+  /**
+   * Builds a User-Agent header value that identifies this build.
+   *
+   * @return the User-Agent header value that identifies this build
+   */
+  private String getUserAgent() {
+    String buildPropertiesPath = "/META-INF/main-application/build.properties";
+    Properties properties = new Properties();
+    try (InputStream stream = RequestUtils.class.getResourceAsStream(buildPropertiesPath)) {
+      properties.load(stream);
+    } catch (IOException e) {
+      System.err.println("Could not load build properties at '" + buildPropertiesPath + "'."
+          + e.toString());
+    }
+    
+    return properties.getProperty("artifactId") + "/" + properties.getProperty("version")
+      + " (build " + properties.getProperty("git.description") + "/"
+      + properties.getProperty("build.time") + ")";
   }
 
   /**
@@ -82,6 +111,7 @@ public class RequestUtils {
 
     HttpPost httpPost = new HttpPost(requestUrl);
     httpPost.setHeader("Accept", "application/json");
+    httpPost.setHeader("User-Agent", userAgent);
     httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
 
     ResponseHandler<JsonObject> handler = new RequestResponseHandler();
