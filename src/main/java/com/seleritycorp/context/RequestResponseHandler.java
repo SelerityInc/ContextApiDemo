@@ -66,7 +66,19 @@ public class RequestResponseHandler implements org.apache.http.client.ResponseHa
       }
       throw new ClientProtocolException("Server responded with " + errorMessage);
     }
+    
+    // At this point, response has a 200 HTTP status code.
 
+    String contentType = entity.getContentType().getValue();
+    String parameterlessContentType = contentType.split("[; ]", 2)[0];
+    if (!"application/json".equals(parameterlessContentType)) {
+      // Response is not Json
+      throw new ClientProtocolException("Received content type '" +  contentType
+          + "' instead of 'application/json'");
+    }
+
+    // At this point, response got sent as JSON
+    
     // Parse the string to JSON
     JsonObject ret = parser.parse(responseString).getAsJsonObject();
     return ret;

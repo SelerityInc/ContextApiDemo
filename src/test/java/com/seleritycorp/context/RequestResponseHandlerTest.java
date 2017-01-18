@@ -54,6 +54,24 @@ public class RequestResponseHandlerTest extends EasyMockSupport {
   }
 
   @Test
+  public void testHandleResponseWrongContentType() throws Exception {
+    HttpResponse response = mockResponse(200, "{\"foo\":42}", "text/plain");
+    RequestResponseHandler handler = createRequestResponseHandler();
+
+    replayAll();
+    
+    try {
+      handler.handleResponse(response);
+      failBecauseExceptionWasNotThrown(ClientProtocolException.class);
+    } catch (ClientProtocolException e) {
+      assertThat(e.getMessage()).contains("text/plain");
+      assertThat(e.getMessage()).contains("application/json");
+    }
+    
+    verifyAll();
+  }
+
+  @Test
   public void testHandleResponseClientErrorNonJson() throws Exception {
     HttpResponse response = mockResponse(400, "nonJsonContentFoo");
     RequestResponseHandler handler = createRequestResponseHandler();
@@ -191,18 +209,23 @@ public class RequestResponseHandlerTest extends EasyMockSupport {
   }
 
   private HttpResponse mockResponse(int statusCode, String content) throws Exception {
+    return mockResponse(statusCode, content, "application/json");
+  }
+
+  private HttpResponse mockResponse(int statusCode, String content, String contentType)
+      throws Exception {
     ProtocolVersion proto = new ProtocolVersion("protoFoo", 1, 2);
     StatusLine statusLine = new BasicStatusLine(proto, statusCode, "reasonFoo");
 
     byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
     InputStream contentStream = new ByteArrayInputStream(contentBytes);
 
-    Header contentType = new BasicHeader("Content-Type", "application/json");
+    Header contentTypeHeader = new BasicHeader("Content-Type", contentType);
 
     HttpEntity httpEntity = createMock(HttpEntity.class);
     expect(httpEntity.getContent()).andReturn(contentStream);
     expect(httpEntity.getContentLength()).andReturn((long)content.length()).anyTimes();
-    expect(httpEntity.getContentType()).andReturn(contentType);
+    expect(httpEntity.getContentType()).andReturn(contentTypeHeader).anyTimes();
 
     HttpResponse response = createMock(HttpResponse.class);
     expect(response.getStatusLine()).andReturn(statusLine);
