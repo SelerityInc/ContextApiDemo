@@ -149,9 +149,15 @@ public class RequestUtilsTest extends EasyMockSupport {
     HttpPost post = (HttpPost) request;
 
     assertThat(post.getURI().toString()).isEqualTo("https://foo.example.com/pathFoo");
+    verifyHeader(post, "Accept", "application/json");
     assertThat(requestEntityToString(post)).isEqualTo("json=%7B%22foo%22%3A%22bar%2Fbaz%22%7D");    
   }
   
+  private void verifyHeader(HttpPost post, String name, String value) {
+    assertThat(post.getHeaders(name)).hasSize(1);
+    assertThat(post.getFirstHeader(name).getValue()).isEqualTo(value);
+  }
+
   private void verifyHandler(Capture<ResponseHandler<JsonObject>> handlerCapture) throws IOException {
     ResponseHandler<JsonObject> handler = handlerCapture.getValue();
     

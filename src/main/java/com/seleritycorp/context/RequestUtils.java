@@ -81,6 +81,7 @@ public class RequestUtils {
     urlParameters.add(new BasicNameValuePair("json", payloadString));
 
     HttpPost httpPost = new HttpPost(requestUrl);
+    httpPost.setHeader("Accept", "application/json");
     httpPost.setEntity(new UrlEncodedFormEntity(urlParameters));
 
     ResponseHandler<JsonObject> handler = new RequestResponseHandler();
