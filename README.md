@@ -3,6 +3,7 @@
 Sample code that shows how to use the Selerity Context API.
 
 * [Installation](#installation)
+* [Organization of the source code](#organization-of-the-source-code)
 * [Examples](#examples)
 * [JavaDoc](#javadoc)
 * [Questions/Support](#questionssupport)
@@ -23,6 +24,16 @@ Sample code that shows how to use the Selerity Context API.
    ```
 ./run-demo.sh -help
 ```
+
+## Organization of the source code
+
+The source code has three main relevant files:
+
+* [`ContextApiDemoMain`](https://github.com/SelerityInc/ContextApiDemo/blob/master/src/main/java/com/seleritycorp/context/ContextApiDemoMain.java) is the main entry point and coordinator for the demo. The demo uses `QueryUtils` to talk to the Selerity Context API.
+* [`QueryUtils`](https://github.com/SelerityInc/ContextApiDemo/blob/master/src/main/java/com/seleritycorp/context/QueryUtils.java) exposes the Selerity Context API endpoints. This abstraction layer is responsible for constructing the request objects and getting the results out of the API responses. The actual HTTP requests are performed through `RequestUtils`
+* [`RequestUtils`](https://github.com/SelerityInc/ContextApiDemo/blob/master/src/main/java/com/seleritycorp/context/RequestUtils.java) performs the basic, low-level HTTP requests.
+
+The remaning files are abstractions supporting those three parts.
 
 ## Examples
 
