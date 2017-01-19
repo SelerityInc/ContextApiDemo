@@ -256,18 +256,20 @@ public class ContextApiDemoMain {
   private Iterable<String> resolveQueryEntityIds() throws Exception {
     List<String> entityIds = new LinkedList<>();
 
-    String entityQueryMode = exactMatching ? "EXACT_MATCH" : "PARTIAL_MATCH";
-    JsonArray results = queryUtils.queryEntities(query, entityQueryMode, MAX_ENTITIES);
+    if (query != null && !query.isEmpty()) {
+      String entityQueryMode = exactMatching ? "EXACT_MATCH" : "PARTIAL_MATCH";
+      JsonArray results = queryUtils.queryEntities(query, entityQueryMode, MAX_ENTITIES);
     
-    printUtils.println("Query for '" + query + "' will look for those entities:");
-    for (JsonElement resultElement : results) {
-      JsonObject result = resultElement.getAsJsonObject();
-      String id = result.getAsJsonPrimitive("entityID").getAsString();
+      printUtils.println("Query for '" + query + "' will look for those entities:");
+      for (JsonElement resultElement : results) {
+        JsonObject result = resultElement.getAsJsonObject();
+        String id = result.getAsJsonPrimitive("entityID").getAsString();
       
-      printUtils.print("* " + id);
-      printUtils.printEntityDetails(result);
+        printUtils.print("* " + id);
+        printUtils.printEntityDetails(result);
       
-      entityIds.add(id);
+        entityIds.add(id);
+      }
     }
     
     return entityIds;
