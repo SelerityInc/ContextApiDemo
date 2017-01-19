@@ -37,11 +37,6 @@ import java.util.UUID;
  */
 public class ContextApiDemoMain {
   /**
-   * Back-off period in seconds before follow-up UPDATE queries.
-   */
-  private static final int PAUSE_SECS = 30;
-
-  /**
    * Upper bound for how many entities a DDS query should return.
    */
   private static final int MAX_ENTITIES = 20;
@@ -92,6 +87,10 @@ public class ContextApiDemoMain {
       + "  - DIRECT   <- shows direct contributions\n"
       + "  - ALL      <- shows all contributions\n")
   String contributions = "NONE";
+
+  @Option(name = "-pause", metaVar = "SECS", hidden = true, usage = "Pause in seconds between "
+      + "content update queries")
+  long pauseSeconds = 30;
 
   private QueryUtils queryUtils;
   private PrintUtils printUtils;
@@ -282,9 +281,9 @@ public class ContextApiDemoMain {
    */
   private void pauseBeforeUpdate() throws InterruptedException {
     try {
-      printUtils.println("Sleeping for " + PAUSE_SECS + " seconds before asking for updated "
+      printUtils.println("Sleeping for " + pauseSeconds + " seconds before asking for updated "
           + "content items");
-      Thread.sleep(PAUSE_SECS * 1000);
+      Thread.sleep(pauseSeconds * 1000);
     } catch (InterruptedException e) {
       throw e;
     }    
