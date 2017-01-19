@@ -76,6 +76,10 @@ public class ContextApiDemoMain {
       + "also partial matches")
   boolean exactMatching = false;
 
+  @Option(name = "-live", usage = "Avoid pausing between updates to get fresh content immediately "
+      + "at the cost of increased network traffic and increased API request rate")
+  boolean live = false;
+
   @Option(name = "-v", usage = "Increases the verbosity. Supply multiple times to increase "
       + "verbosity further and further.")
   boolean[] verboseCollector = {};
@@ -249,6 +253,13 @@ public class ContextApiDemoMain {
         + "influenced the scoring.\n"
         + "\n"
         + "\n"
+        + "  ./run-demo.sh -apikey REPLACE_WITH_YOUR_API_KEY -query Google -live\n"
+        + "\n"
+        + "The above command will query and show the latest breaking news for items relating to"
+        + "Google (including partial matches) while skipping pauses between updates. That way,"
+        + "new items are received right away.\n"
+        + "\n"
+        + "\n"
         + "  ./run-demo.sh -apikey REPLACE_WITH_YOUR_API_KEY -sources\n"
         + "\n"
         + "The above command will query and show the sources that your API key is entitled for.\n"
@@ -376,8 +387,10 @@ public class ContextApiDemoMain {
         printUtils.printRecommendation(recommendation);        
       }
       
-      // Backing-off a bit before the next query to avoid hammering servers.
-      pauseBeforeUpdate();
+      if (!live) {
+        // Backing-off a bit before the next query to avoid hammering servers.
+        pauseBeforeUpdate();
+      }
     }   
   }
  
