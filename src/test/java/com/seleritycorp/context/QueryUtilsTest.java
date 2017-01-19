@@ -124,7 +124,7 @@ public class QueryUtilsTest extends EasyMockSupport {
 
     long start = System.currentTimeMillis();
     JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "NONE",
-        new LinkedList<>());
+        new LinkedList<String>());
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -161,7 +161,7 @@ public class QueryUtilsTest extends EasyMockSupport {
 
     long start = System.currentTimeMillis();
     JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "ALL",
-        new LinkedList<>());
+        new LinkedList<String>());
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -198,7 +198,7 @@ public class QueryUtilsTest extends EasyMockSupport {
 
     long start = System.currentTimeMillis();
     JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "DIRECT",
-        new LinkedList<>());
+        new LinkedList<String>());
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -235,7 +235,7 @@ public class QueryUtilsTest extends EasyMockSupport {
 
     long start = System.currentTimeMillis();
     JsonArray actual = queryUtils.queryRecommendations("typeFoo", false, 42, "NONE",
-        new LinkedList<>());
+        new LinkedList<String>());
     long end = System.currentTimeMillis();
     
     verifyAll();

@@ -61,7 +61,7 @@ public class PrintUtils {
    * @param queryUtils query layer used to load entity details for printing.
    * @param printer The stream to print to
    */
-  public PrintUtils(QueryUtils queryUtils, PrintStream printer) {
+  public PrintUtils(final QueryUtils queryUtils, PrintStream printer) {
     this.printer = printer;
     this.jsonUtils = new JsonUtils();
     
