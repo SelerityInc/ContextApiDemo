@@ -26,6 +26,7 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import java.io.PrintStream;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -110,13 +111,12 @@ public class ContextApiDemoMain {
       // Parsing the command line arguments failed. So we print a help screen
       System.err.println(e.getMessage());
       System.err.println();
-      parser.printUsage(System.err);
+      printUsage(parser, System.err);
       System.exit(1);
     }
     
     if (showHelp) {
-      System.out.println("The following options are available:");
-      parser.printUsage(System.out);
+      printUsage(parser, System.out);
       System.exit(1);
     }
     
@@ -155,6 +155,16 @@ public class ContextApiDemoMain {
     }
   }
 
+  /**
+   * Prints usage information to a given stream.
+   * 
+   * @param parser The parser for command line options
+   * @param printer The stream to print usage information to
+   */
+  private void printUsage(CmdLineParser parser, PrintStream printer) {
+    printer.println("The following options are available:");
+    parser.printUsage(printer);
+  }
 
   /**
    * Queries for and prints entitled sources.
