@@ -60,7 +60,21 @@ then
     fi
 fi
 
-COMMAND=( java -jar "$JAR_FILE" "$@" )
+# Splitting passed arguments into java arguments and arguments for the
+# demo jar. That way, users can override java settings like logging.
+DEMO_ARGS=()
+JAVA_ARGS=()
+for ARG in "$@"
+do
+    if [ "${ARG:0:2}" = "-D" -o "${ARG:0:2}" = "-X" ]
+    then
+        JAVA_ARGS+=("$ARG")
+    else
+        DEMO_ARGS+=("$ARG")
+    fi
+done
+
+COMMAND=( java "${JAVA_ARGS[@]}" -jar "$JAR_FILE" "${DEMO_ARGS[@]}" )
 log "Starting command:" "${COMMAND[@]}"
 log
 exec "${COMMAND[@]}"
