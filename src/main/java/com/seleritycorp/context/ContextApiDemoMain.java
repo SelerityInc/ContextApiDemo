@@ -16,6 +16,9 @@
 
 package com.seleritycorp.context;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -30,6 +33,7 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main entry point for demo of the Selerity Context API.
@@ -85,8 +89,24 @@ public class ContextApiDemoMain {
       + "(No AUTHOR query, as this demo does not allow to specify authors)")
   String queryType = "FEED";
 
+  @Option(name = "-contributions", metaVar = "MODE", usage = "Allows to expose which factors "
+      + "contributed to the score of a found content item. Can be one of:\n"
+      + "  - NONE     <- does not show contributions\n"
+      + "  - DIRECT   <- shows direct contributions\n"
+      + "  - ALL      <- shows all contributions\n")
+  String contributions = "NONE";
+
   private JsonUtils jsonUtils = new JsonUtils();
   private QueryUtils queryUtils;
+  
+  /**
+   * Cache of loaded entities
+   * 
+   * <p/>This cache is used when printing details about score contributions. There, the same
+   * entity is typically loaded againt and again. To avoid having to go back to the API again and
+   * again, we cache and reuse results for a few minutes.
+   */
+  private LoadingCache<String, JsonObject> entitiesDetailCache;
 
   /**
    * Handles argument parsing.
@@ -152,8 +172,37 @@ public class ContextApiDemoMain {
    * Prints a recommended content item to stdout.
    * 
    * @param recommendation The recommended content item
+   * @throws Exception if errors occur
    */
-  private void printRecommendation(JsonObject recommendation) {
+  private void printContribution(JsonObject contribution) throws Exception {
+    float value = contribution.get("value").getAsFloat();
+    String type = jsonUtils.getAsString(contribution, "contributorType");
+    String contributor = jsonUtils.getAsString(contribution, "contributor");
+
+    if ("RELEVANCE_ENTITY".equals(type)) {
+      try {
+        JsonObject details = entitiesDetailCache.get(contributor);
+        contributor += " (i.e.: " + jsonUtils.getAsString(details, "entityType");
+        contributor += ", " + jsonUtils.getAsString(details, "displayName");
+        contributor += ", " + jsonUtils.getAsString(details, "description");
+        contributor += ")";        
+      } catch (Exception e) {
+        // Loading or formatting failed. But since the detailed information is not
+        // crucial, we report the failure but otherwise ignore it.
+        contributor += " (failed to load details)";
+      }
+    }
+    String format = "  score-contribution: %1$.3f %2$-18s %3$s";
+    System.out.println(String.format(format, value, type, contributor));
+  }
+
+  /**
+   * Prints a recommended content item to stdout.
+   * 
+   * @param recommendation The recommended content item
+   * @throws Exception if errors occur
+   */
+  private void printRecommendation(JsonObject recommendation) throws Exception {
     System.out.println("");
     System.out.println("* " + jsonUtils.getAsString(recommendation, "headline"));
     System.out.println("");
@@ -162,6 +211,12 @@ public class ContextApiDemoMain {
     System.out.println("  source: " + jsonUtils.getAsString(recommendation, "source"));
     System.out.println("  timestamp: " + jsonUtils.getAsString(recommendation, "timestamp"));
     System.out.println("  score: " + jsonUtils.getAsString(recommendation, "score"));
+    JsonElement contributions = recommendation.get("contributions");
+    if (contributions != null) {
+      for (JsonElement contribution : contributions.getAsJsonArray()) {
+        printContribution(contribution.getAsJsonObject());
+      }
+    }
     System.out.println("  summary: " + jsonUtils.getAsString(recommendation, "summary"));
     System.out.println("  socialInfo->author: " + jsonUtils.getAsString(recommendation,
         "socialInfo", "author"));
@@ -211,8 +266,9 @@ public class ContextApiDemoMain {
    */
   private Iterable<String> resolveQueryEntityIds() throws Exception {
     List<String> entityIds = new LinkedList<>();
-    
-    JsonArray results = queryUtils.queryEntities(query, exactMatching, MAX_ENTITIES);
+
+    String entityQueryMode = exactMatching ? "EXACT_MATCH" : "PARTIAL_MATCH";
+    JsonArray results = queryUtils.queryEntities(query, entityQueryMode, MAX_ENTITIES);
     
     System.out.println("Query for '" + query + "' will look for those entities:");
     for (JsonElement resultElement : results) {
@@ -260,7 +316,8 @@ public class ContextApiDemoMain {
     boolean isInitial = true; // Whether or not to perform an INITIAL or UPDATE query.
     while (true) {
       // Perform the query
-      recommendations = queryUtils.queryRecommendations(queryType, isInitial, batchSize, entityIds);
+      recommendations = queryUtils.queryRecommendations(queryType, isInitial, batchSize,
+          contributions, entityIds);
       isInitial = false; // From now on, all queries are UPDATES
 
       // Dumping the response
@@ -305,6 +362,22 @@ public class ContextApiDemoMain {
 
     // Setting up query helpers for the endpoint
     queryUtils = new QueryUtils(apiKey, sessionId, requestUtils);
+
+    // Setting up cache for entity details that loads automatically
+    entitiesDetailCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(10, TimeUnit.MINUTES)
+        .maximumSize(1000)
+        .build(new CacheLoader<String, JsonObject>(){
+          @Override
+          public JsonObject load(String entityId) throws Exception {
+            JsonArray entityArray = queryUtils.queryEntities(entityId, "ENTITY_ID", 1);
+            if (entityArray.size() != 1) {
+              throw new Exception("Querying " + entityId + " did not yield exactly 1 result");
+            }
+
+            return entityArray.get(0).getAsJsonObject();
+          }
+        });
 
     // Now that setup is complete, start the queries. 
     try {

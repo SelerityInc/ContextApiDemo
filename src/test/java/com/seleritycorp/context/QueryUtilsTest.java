@@ -123,7 +123,8 @@ public class QueryUtilsTest extends EasyMockSupport {
     QueryUtils queryUtils = createQueryUtils();
 
     long start = System.currentTimeMillis();
-    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, new LinkedList<>());
+    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "NONE",
+        new LinkedList<>());
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -133,6 +134,81 @@ public class QueryUtilsTest extends EasyMockSupport {
     JsonObject parameters = payload.getAsJsonObject("parameters"); 
     assertThat(parameters.get("queryType").getAsString()).isEqualTo("typeFoo");
     assertThat(parameters.get("queryMode").getAsString()).isEqualTo("INITIAL");
+    assertThat(parameters.get("contributionMode").getAsString()).isEqualTo("NONE");
+    assertThat(parameters.get("numItems").getAsInt()).isEqualTo(42);
+    
+    JsonObject interests = payload.getAsJsonObject("interests");
+    assertThat(interests.entrySet()).isEmpty();
+
+    assertThat(actual).containsExactly(new JsonPrimitive("foo"), new JsonPrimitive("bar"));
+  }
+
+  @Test
+  public void testQueryRecommendationsContributionsAll() throws Exception {
+    Capture<JsonObject> payloadCapture = newCapture();
+    
+    JsonObject response = new JsonObject();
+    JsonArray recommendations = new JsonArray();
+    recommendations.add("foo");
+    recommendations.add("bar");
+    response.add("recommendations", recommendations);
+    
+    expect(requestUtils.post(eq("/v2/query"), capture(payloadCapture))).andReturn(response);
+    
+    replayAll();
+    
+    QueryUtils queryUtils = createQueryUtils();
+
+    long start = System.currentTimeMillis();
+    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "ALL",
+        new LinkedList<>());
+    long end = System.currentTimeMillis();
+    
+    verifyAll();
+    
+    JsonObject payload = payloadCapture.getValue();
+    verifyPayloadCommonFields(payload, start, end);
+    JsonObject parameters = payload.getAsJsonObject("parameters"); 
+    assertThat(parameters.get("queryType").getAsString()).isEqualTo("typeFoo");
+    assertThat(parameters.get("queryMode").getAsString()).isEqualTo("INITIAL");
+    assertThat(parameters.get("contributionMode").getAsString()).isEqualTo("ALL");
+    assertThat(parameters.get("numItems").getAsInt()).isEqualTo(42);
+    
+    JsonObject interests = payload.getAsJsonObject("interests");
+    assertThat(interests.entrySet()).isEmpty();
+
+    assertThat(actual).containsExactly(new JsonPrimitive("foo"), new JsonPrimitive("bar"));
+  }
+
+  @Test
+  public void testQueryRecommendationsContributionsDirect() throws Exception {
+    Capture<JsonObject> payloadCapture = newCapture();
+    
+    JsonObject response = new JsonObject();
+    JsonArray recommendations = new JsonArray();
+    recommendations.add("foo");
+    recommendations.add("bar");
+    response.add("recommendations", recommendations);
+    
+    expect(requestUtils.post(eq("/v2/query"), capture(payloadCapture))).andReturn(response);
+    
+    replayAll();
+    
+    QueryUtils queryUtils = createQueryUtils();
+
+    long start = System.currentTimeMillis();
+    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "DIRECT",
+        new LinkedList<>());
+    long end = System.currentTimeMillis();
+    
+    verifyAll();
+    
+    JsonObject payload = payloadCapture.getValue();
+    verifyPayloadCommonFields(payload, start, end);
+    JsonObject parameters = payload.getAsJsonObject("parameters"); 
+    assertThat(parameters.get("queryType").getAsString()).isEqualTo("typeFoo");
+    assertThat(parameters.get("queryMode").getAsString()).isEqualTo("INITIAL");
+    assertThat(parameters.get("contributionMode").getAsString()).isEqualTo("DIRECT");
     assertThat(parameters.get("numItems").getAsInt()).isEqualTo(42);
     
     JsonObject interests = payload.getAsJsonObject("interests");
@@ -158,7 +234,8 @@ public class QueryUtilsTest extends EasyMockSupport {
     QueryUtils queryUtils = createQueryUtils();
 
     long start = System.currentTimeMillis();
-    JsonArray actual = queryUtils.queryRecommendations("typeFoo", false, 42, new LinkedList<>());
+    JsonArray actual = queryUtils.queryRecommendations("typeFoo", false, 42, "NONE",
+        new LinkedList<>());
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -168,6 +245,7 @@ public class QueryUtilsTest extends EasyMockSupport {
     JsonObject parameters = payload.getAsJsonObject("parameters"); 
     assertThat(parameters.get("queryType").getAsString()).isEqualTo("typeFoo");
     assertThat(parameters.get("queryMode").getAsString()).isEqualTo("UPDATE");
+    assertThat(parameters.get("contributionMode").getAsString()).isEqualTo("NONE");
     assertThat(parameters.get("numItems").getAsInt()).isEqualTo(42);
     
     JsonObject interests = payload.getAsJsonObject("interests");
@@ -197,7 +275,8 @@ public class QueryUtilsTest extends EasyMockSupport {
     requestedEntities.add("quuux");
     
     long start = System.currentTimeMillis();
-    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, requestedEntities);
+    JsonArray actual = queryUtils.queryRecommendations("typeFoo", true, 42, "NONE",
+        requestedEntities);
     long end = System.currentTimeMillis();
     
     verifyAll();
@@ -207,6 +286,7 @@ public class QueryUtilsTest extends EasyMockSupport {
     JsonObject parameters = payload.getAsJsonObject("parameters"); 
     assertThat(parameters.get("queryType").getAsString()).isEqualTo("typeFoo");
     assertThat(parameters.get("queryMode").getAsString()).isEqualTo("INITIAL");
+    assertThat(parameters.get("contributionMode").getAsString()).isEqualTo("NONE");
     assertThat(parameters.get("numItems").getAsInt()).isEqualTo(42);
     
     JsonObject interests = payload.getAsJsonObject("interests");
@@ -237,7 +317,7 @@ public class QueryUtilsTest extends EasyMockSupport {
     replayAll();
     
     QueryUtils queryUtils = createQueryUtils();    
-    JsonArray actual = queryUtils.queryEntities("queryFoo", true, 42);
+    JsonArray actual = queryUtils.queryEntities("queryFoo", "EXACT_MATCH", 42);
     
     verifyAll();
     
@@ -265,13 +345,41 @@ public class QueryUtilsTest extends EasyMockSupport {
     replayAll();
     
     QueryUtils queryUtils = createQueryUtils();    
-    JsonArray actual = queryUtils.queryEntities("queryFoo", false, 42);
+    JsonArray actual = queryUtils.queryEntities("queryFoo", "PARTIAL_MATCH", 42);
     
     verifyAll();
     
     JsonObject payload = payloadCapture.getValue();
     assertThat(payload.get("query").getAsString()).isEqualTo("queryFoo");
     assertThat(payload.get("queryType").getAsString()).isEqualTo("PARTIAL_MATCH");
+    assertThat(payload.get("maxResults").getAsInt()).isEqualTo(42);
+    assertThat(payload.get("queryMode")).isNull();
+
+    assertThat(actual).containsExactly(new JsonPrimitive("foo"), new JsonPrimitive("bar"));
+  }
+
+  @Test
+  public void testQueryEntitiesEntityId() throws Exception {
+    Capture<JsonObject> payloadCapture = newCapture();
+    
+    JsonObject response = new JsonObject();
+    JsonArray entities = new JsonArray();
+    entities.add("foo");
+    entities.add("bar");
+    response.add("result", entities);
+    
+    expect(requestUtils.post(eq("/v2/dds/"), capture(payloadCapture))).andReturn(response);
+    
+    replayAll();
+    
+    QueryUtils queryUtils = createQueryUtils();    
+    JsonArray actual = queryUtils.queryEntities("queryFoo", "ENTITY_ID", 42);
+    
+    verifyAll();
+    
+    JsonObject payload = payloadCapture.getValue();
+    assertThat(payload.get("query").getAsString()).isEqualTo("queryFoo");
+    assertThat(payload.get("queryType").getAsString()).isEqualTo("ENTITY_ID");
     assertThat(payload.get("maxResults").getAsInt()).isEqualTo(42);
     assertThat(payload.get("queryMode")).isNull();
 

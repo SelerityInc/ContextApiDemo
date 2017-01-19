@@ -106,6 +106,9 @@ public class QueryUtils {
    * @param queryType The type of query to perform FEED, RECOMMENDATION, ...
    * @param isInitial If true, an INITIAL query is made. Otherwise, an UPDATE query is made.
    * @param numItems The maximum number of items to return.
+   * @param contributionMode Whether or not to request information about score contributions.
+   *     NONE does not request any information. DIRECT request information only about direct
+   *     contributors. ALL requests information about all contributors.
    * @param entityIds The entity ids to search for. Can be the empty list to avoid filtering to
    *     entities.
    * @return The recommended content items. Please find the structure of the array elements in the
@@ -113,11 +116,12 @@ public class QueryUtils {
    * @throws Exception if errors occur
    */
   public JsonArray queryRecommendations(String queryType, boolean isInitial, int numItems,
-      Iterable<String> entityIds) throws Exception {
+      String contributionMode, Iterable<String> entityIds) throws Exception {
     JsonObject parameters = new JsonObject();
     parameters.addProperty("queryType", queryType);
     parameters.addProperty("queryMode", isInitial ? "INITIAL" : "UPDATE");
     parameters.addProperty("numItems", numItems);
+    parameters.addProperty("contributionMode", contributionMode);
 
     JsonArray entities = new JsonArray();
     for (String entityId : entityIds) {
@@ -145,18 +149,17 @@ public class QueryUtils {
    * Query for entity information.
    * 
    * @param query The string to query DDS for
-   * @param exactMatch If true, an extact match is searched for. Otherwise, partial matches are
-   *     considered too.
+   * @param queryType One of EXACT_MATCH, PARTIAL_MATCH, and ENTITY_ID.
    * @param maxResults The maximum numbers of results to request
    * @return The found entities. Please find the structure of the array elements in the Selerity
    *     Context API documentation.
    * @throws Exception if errors occur.
    */
-  public JsonArray queryEntities(String query, boolean exactMatch, int maxResults)
+  public JsonArray queryEntities(String query, String queryType, int maxResults)
       throws Exception {
     JsonObject queryObj = new JsonObject();
     queryObj.addProperty("query", query);
-    queryObj.addProperty("queryType", exactMatch ? "EXACT_MATCH" : "PARTIAL_MATCH");
+    queryObj.addProperty("queryType", queryType);
     queryObj.addProperty("maxResults", maxResults);
 
     JsonObject response = requestUtils.post(PATH_DDS, queryObj);
