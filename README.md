@@ -13,7 +13,7 @@ Sample code that shows how to use the Selerity Context API.
 * Request an API key from support@seleritycorp.com for the Selerity Context API
 * Install Java 7 (or newer)
 * Install Maven
-* To query and show items about Google, run the following command (which builds the application upon need)
+* To query and show items about Google, run the following command (`run-demo.sh` builds the application upon need)
    ```
 ./run-demo.sh -apikey REPLACE_WITH_YOUR_API_KEY -query Google
 ```
