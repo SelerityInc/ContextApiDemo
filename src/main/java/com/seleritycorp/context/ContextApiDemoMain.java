@@ -16,9 +16,6 @@
 
 package com.seleritycorp.context;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -33,7 +30,6 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Main entry point for demo of the Selerity Context API.
@@ -96,18 +92,9 @@ public class ContextApiDemoMain {
       + "  - ALL      <- shows all contributions\n")
   String contributions = "NONE";
 
-  private JsonUtils jsonUtils = new JsonUtils();
   private QueryUtils queryUtils;
+  private PrintUtils printUtils;
   
-  /**
-   * Cache of loaded entities
-   * 
-   * <p/>This cache is used when printing details about score contributions. There, the same
-   * entity is typically loaded againt and again. To avoid having to go back to the API again and
-   * again, we cache and reuse results for a few minutes.
-   */
-  private LoadingCache<String, JsonObject> entitiesDetailCache;
-
   /**
    * Handles argument parsing.
    *
@@ -168,71 +155,6 @@ public class ContextApiDemoMain {
     }
   }
 
-  /**
-   * Prints a recommended content item to stdout.
-   * 
-   * @param recommendation The recommended content item
-   * @throws Exception if errors occur
-   */
-  private void printContribution(JsonObject contribution) throws Exception {
-    float value = contribution.get("value").getAsFloat();
-    String type = jsonUtils.getAsString(contribution, "contributorType");
-    String contributor = jsonUtils.getAsString(contribution, "contributor");
-
-    if ("RELEVANCE_ENTITY".equals(type)) {
-      try {
-        JsonObject details = entitiesDetailCache.get(contributor);
-        contributor += " (i.e.: " + jsonUtils.getAsString(details, "entityType");
-        contributor += ", " + jsonUtils.getAsString(details, "displayName");
-        contributor += ", " + jsonUtils.getAsString(details, "description");
-        contributor += ")";        
-      } catch (Exception e) {
-        // Loading or formatting failed. But since the detailed information is not
-        // crucial, we report the failure but otherwise ignore it.
-        contributor += " (failed to load details)";
-      }
-    }
-    String format = "  score-contribution: %1$.3f %2$-18s %3$s";
-    System.out.println(String.format(format, value, type, contributor));
-  }
-
-  /**
-   * Prints a recommended content item to stdout.
-   * 
-   * @param recommendation The recommended content item
-   * @throws Exception if errors occur
-   */
-  private void printRecommendation(JsonObject recommendation) throws Exception {
-    System.out.println("");
-    System.out.println("* " + jsonUtils.getAsString(recommendation, "headline"));
-    System.out.println("");
-    System.out.println("  contentID: " + jsonUtils.getAsString(recommendation, "contentID"));
-    System.out.println("  contentType: " + jsonUtils.getAsString(recommendation, "contentType"));
-    System.out.println("  source: " + jsonUtils.getAsString(recommendation, "source"));
-    System.out.println("  timestamp: " + jsonUtils.getAsString(recommendation, "timestamp"));
-    System.out.println("  score: " + jsonUtils.getAsString(recommendation, "score"));
-    JsonElement contributions = recommendation.get("contributions");
-    if (contributions != null) {
-      for (JsonElement contribution : contributions.getAsJsonArray()) {
-        printContribution(contribution.getAsJsonObject());
-      }
-    }
-    System.out.println("  summary: " + jsonUtils.getAsString(recommendation, "summary"));
-    System.out.println("  socialInfo->author: " + jsonUtils.getAsString(recommendation,
-        "socialInfo", "author"));
-    System.out.println("  linkURL: " + jsonUtils.getAsString(recommendation, "linkURL"));
-
-    JsonArray relatedContentArray = recommendation.get("relatedContent").getAsJsonArray();
-    for (JsonElement relatedContentElement: relatedContentArray) {
-      JsonObject relatedContentObject = relatedContentElement.getAsJsonObject();
-      String line = "  related content:";
-      line += " " + jsonUtils.getAsString(relatedContentObject, "relationship");
-      line += " " + jsonUtils.getAsString(relatedContentObject, "contentItem", "contentType");
-      line += " " + jsonUtils.getAsString(relatedContentObject, "contentItem", "linkURL");
-      
-      System.out.println(line);
-    }
-  }
 
   /**
    * Queries for and prints entitled sources.
@@ -243,11 +165,11 @@ public class ContextApiDemoMain {
     JsonArray sources = queryUtils.queryEntitledSources();
 
     if (sources.size() == 0) {
-      System.out.println("API key is not entitled for any source.");
+      printUtils.println("API key is not entitled for any source.");
     } else {    
-      System.out.println("API key is entitled for the following sources:");
+      printUtils.println("API key is entitled for the following sources:");
       for (JsonElement source : sources) {
-        System.out.println("* " + source.getAsString());
+        printUtils.println("* " + source.getAsString());
       }
     }
   }
@@ -270,15 +192,13 @@ public class ContextApiDemoMain {
     String entityQueryMode = exactMatching ? "EXACT_MATCH" : "PARTIAL_MATCH";
     JsonArray results = queryUtils.queryEntities(query, entityQueryMode, MAX_ENTITIES);
     
-    System.out.println("Query for '" + query + "' will look for those entities:");
+    printUtils.println("Query for '" + query + "' will look for those entities:");
     for (JsonElement resultElement : results) {
       JsonObject result = resultElement.getAsJsonObject();
       String id = result.getAsJsonPrimitive("entityID").getAsString();
-      String type = result.getAsJsonPrimitive("entityType").getAsString();
-      String name = result.getAsJsonPrimitive("displayName").getAsString();
-      String description = result.getAsJsonPrimitive("description").getAsString();
       
-      System.out.println("* " + id + " -> " + name + " (" + type + ", " + description + ")");
+      printUtils.print("* " + id);
+      printUtils.printEntityDetails(result);
       
       entityIds.add(id);
     }
@@ -293,7 +213,7 @@ public class ContextApiDemoMain {
    */
   private void pauseBeforeUpdate() throws InterruptedException {
     try {
-      System.out.println("Sleeping for " + PAUSE_SECS + " seconds before asking for updated "
+      printUtils.println("Sleeping for " + PAUSE_SECS + " seconds before asking for updated "
           + "content items");
       Thread.sleep(PAUSE_SECS * 1000);
     } catch (InterruptedException e) {
@@ -321,7 +241,7 @@ public class ContextApiDemoMain {
       isInitial = false; // From now on, all queries are UPDATES
 
       // Dumping the response
-      System.out.println("Received " + recommendations.size() + " recommendations. "
+      printUtils.println("Received " + recommendations.size() + " recommendations. "
           + "(Printing only new ones.)");
       for (JsonElement recommendationElement : recommendations) {
         JsonObject recommendation = recommendationElement.getAsJsonObject();
@@ -329,7 +249,7 @@ public class ContextApiDemoMain {
         if (contentId != null) {
           if (!seenContentIds.contains(contentId)) {
             // Content item has not been seen, so we print it.
-            printRecommendation(recommendation);
+            printUtils.printRecommendation(recommendation);
             
             // And we remember that we saw that content item.
             seenContentIds.addFirst(contentId);
@@ -355,29 +275,16 @@ public class ContextApiDemoMain {
   public void doMain(final String[] args) {
     parseArgs(args);
 
-    System.out.println("Using Selerity Context API server at " + apiServerRootUrl);
-
     // Setting up the endpoint config
     RequestUtils requestUtils = new RequestUtils(apiServerRootUrl);
 
     // Setting up query helpers for the endpoint
     queryUtils = new QueryUtils(apiKey, sessionId, requestUtils);
 
-    // Setting up cache for entity details that loads automatically
-    entitiesDetailCache = CacheBuilder.newBuilder()
-        .expireAfterWrite(10, TimeUnit.MINUTES)
-        .maximumSize(1000)
-        .build(new CacheLoader<String, JsonObject>(){
-          @Override
-          public JsonObject load(String entityId) throws Exception {
-            JsonArray entityArray = queryUtils.queryEntities(entityId, "ENTITY_ID", 1);
-            if (entityArray.size() != 1) {
-              throw new Exception("Querying " + entityId + " did not yield exactly 1 result");
-            }
-
-            return entityArray.get(0).getAsJsonObject();
-          }
-        });
+    // Finally, setting the print helpers
+    printUtils = new PrintUtils(queryUtils);
+    
+    printUtils.println("Using Selerity Context API server at " + apiServerRootUrl);
 
     // Now that setup is complete, start the queries. 
     try {
