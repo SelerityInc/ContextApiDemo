@@ -162,7 +162,16 @@ public class ContextApiDemoMain {
    * @param printer The stream to print usage information to
    */
   private void printUsage(CmdLineParser parser, PrintStream printer) {
+    printer.println("\nUsage:\n");
+    printer.print("  run-demo.sh ");
+    parser.printSingleLineUsage(printer);
+    printer.println();
+
+    printer.println();
+    
     printer.println("The following options are available:");
+    printer.println();
+
     parser.printUsage(printer);
   }
 
