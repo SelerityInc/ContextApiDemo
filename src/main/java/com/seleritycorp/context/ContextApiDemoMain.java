@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
@@ -346,16 +347,15 @@ public class ContextApiDemoMain {
           contributions, entityIds);
       isInitial = false; // From now on, all queries are UPDATES
 
-      // Dumping the response
-      printUtils.println("Received " + recommendations.size() + " recommendations. "
-          + "(Printing only new ones.)");
+      // Filter down to unseen recommendations    
+      List<JsonObject> unseenRecommendations = new ArrayList<>(recommendations.size());
       for (JsonElement recommendationElement : recommendations) {
         JsonObject recommendation = recommendationElement.getAsJsonObject();
         String contentId = recommendation.getAsJsonPrimitive("contentID").getAsString();
         if (contentId != null) {
           if (!seenContentIds.contains(contentId)) {
-            // Content item has not been seen, so we print it.
-            printUtils.printRecommendation(recommendation);
+            // Recommendation has not yet been seen
+            unseenRecommendations.add(recommendation);
             
             // And we remember that we saw that content item.
             seenContentIds.addFirst(contentId);
@@ -368,6 +368,14 @@ public class ContextApiDemoMain {
         }
       }
 
+      printUtils.println("Received " + recommendations.size() + " recommendations. "
+          + unseenRecommendations.size() + " of those have not yet been seen.");
+
+      // Printing unseen recommendations
+      for (JsonObject recommendation : unseenRecommendations) {
+        printUtils.printRecommendation(recommendation);        
+      }
+      
       // Backing-off a bit before the next query to avoid hammering servers.
       pauseBeforeUpdate();
     }   
