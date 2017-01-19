@@ -19,6 +19,8 @@ package com.seleritycorp.context;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -31,6 +33,8 @@ import java.io.IOException;
  * Parses query response to JsonObject, or upon error extracts descriptive error message.
  */
 public class RequestResponseHandler implements org.apache.http.client.ResponseHandler<JsonObject> {
+  private static final Log log = LogFactory.getLog(RequestResponseHandler.class);
+
   @Override
   public JsonObject handleResponse(HttpResponse response)
       throws ClientProtocolException, IOException {
@@ -43,6 +47,7 @@ public class RequestResponseHandler implements org.apache.http.client.ResponseHa
     // The API does not return partials or some such, so any response that is not a 200,
     // indicates issues.
     if (statusCode != 200) {
+      log.trace("Raw response: " + responseString);
       String errorMessage = statusCode + " " + statusLine.getReasonPhrase();
       // Instead of the pure HTTP status information, we try to get a descriptive error
       // message. Context API returns JSON objects that indicate the error. So we
@@ -73,6 +78,7 @@ public class RequestResponseHandler implements org.apache.http.client.ResponseHa
     String parameterlessContentType = contentType.split("[; ]", 2)[0];
     if (!"application/json".equals(parameterlessContentType)) {
       // Response is not Json
+      log.trace("Raw response: " + responseString);
       throw new ClientProtocolException("Received content type '" +  contentType
           + "' instead of 'application/json'");
     }

@@ -26,11 +26,16 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.LogManager;
 
 /**
  * Main entry point for demo of the Selerity Context API.
@@ -69,6 +74,10 @@ public class ContextApiDemoMain {
   @Option(name = "-exact", usage = "When matching entities, consider only exact matches, instead of"
       + "also partial matches")
   boolean exactMatching = false;
+
+  @Option(name = "-v", usage = "Increases the verbosity. Supply multiple times to increase "
+      + "verbosity further and further.")
+  boolean[] verboseCollector = {};
 
   @Option(name = "-querytype", metaVar = "TYPE", usage = "The type of query to make. One of\n"
       + "  - FEED            <- use to keep on top of latest\n"
@@ -119,6 +128,8 @@ public class ContextApiDemoMain {
       System.exit(1);
     }
     
+    updateLogging();
+
     // Making sure we to avoid obviously wrong api keys.
     if (apiKey == null || apiKey.isEmpty()) {
       System.err.println("No usable api key given. Please run the demo command with\n"
@@ -151,6 +162,33 @@ public class ContextApiDemoMain {
       default:
         System.err.println("Unknown query type " + queryType + ". Switching to FEED.");
         queryType = "FEED";
+    }
+  }
+
+  /**
+   * Updates logging configuration to reflect verbosity settings.  
+   */
+  private void updateLogging() {
+    int verbosity = (verboseCollector == null) ? 0 : verboseCollector.length;
+
+    if (verbosity > 0) {
+      LogManager logManager = LogManager.getLogManager();
+      String globalLevel = (verbosity <= 2) ? "INFO" : "FINEST";
+      String comSeleritycorpLevel = (verbosity <= 1) ? "FINE" : "FINEST";
+      String configString = "\n"
+          + ".level=" + globalLevel + "\n"
+          + "com.seleritycorp.level=" + comSeleritycorpLevel + "\n"
+          + "handlers=java.util.logging.ConsoleHandler\n"
+          + "java.util.logging.ConsoleHandler.level = FINEST\n"
+          + "java.util.logging.SimpleFormatter.format=%1$tFT%1$tT.%1$tL %4$s %2$s - %5$s%6$s%n";
+      InputStream configStream = new ByteArrayInputStream(configString.getBytes(
+          StandardCharsets.UTF_8));
+
+      try {
+        logManager.readConfiguration(configStream);
+      } catch (SecurityException | IOException e) {
+        System.err.print("Failed to update logging config. " + e.toString());
+      }
     }
   }
 

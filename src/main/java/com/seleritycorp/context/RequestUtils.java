@@ -119,7 +119,13 @@ public class RequestUtils {
     JsonObject ret;
     try (CloseableHttpClient httpclient = getHttpClient()) {
       log.debug("POSTing request to " + requestUrl + " with payload json=" + payloadString);
+
+      long before = System.currentTimeMillis();
       ret = httpclient.execute(httpPost, handler);
+      long after = System.currentTimeMillis();
+      
+      log.debug("Request took: " + (after - before) + "ms");
+      log.trace("Rarsed response: " + GSON.toJson(ret));
     }
     return ret;
   }
