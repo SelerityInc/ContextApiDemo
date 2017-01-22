@@ -33,7 +33,8 @@ SCRIPT_DIR="$(dirname "$0")"
 log "Switching to $SCRIPT_DIR directory ..."
 cd "$SCRIPT_DIR"
 
-JAR_VERSION=$(grep '<version>' pom.xml | sed -n -e '2{s@^.*<version>\([^<]*\)</.*@\1@;p}')
+JAR_VERSION=$(grep '<version>' pom.xml \
+    | sed -n -e '2{ ' -e 's@^.*<version>\([^<]*\)</.*@\1@' -e 'p' -e '}')
 JAR_FILE="target/ContextApiDemo-$JAR_VERSION.jar"
 
 log "Checking for java ..."
