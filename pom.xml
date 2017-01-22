@@ -33,9 +33,23 @@
   <name>Context API Demo</name>
   <description>Demo code for Selerity Context API</description>
 
+  <url>https://github.com/SelerityInc/${project.artifactId}</url>
   <inceptionYear>2017</inceptionYear>
 
-  <scm></scm>
+  <scm>
+    <!--
+    Maven would allow to inherit all scm settings from the parent
+    pom. But due to Maven's child path adjustments for child modules, the
+    URLs would have the project name appended to the URLs and thereby
+    they break (See MNG-6159).
+    As we rely on working urls for the release process, we duplicate
+    the scm tag until MNG-6159 is resolved.
+    -->
+    <connection>scm:git:github.com:SelerityInc/${project.artifactId}.git</connection>
+    <developerConnection>scm:git:git@github.com:SelerityInc/${project.artifactId}.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/SelerityInc/${project.artifactId}</url>
+  </scm>
 
   <properties>
     <java.version>1.7</java.version>
