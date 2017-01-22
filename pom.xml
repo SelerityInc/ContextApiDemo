@@ -27,7 +27,7 @@
 
   <groupId>com.seleritycorp.context</groupId>
   <artifactId>ContextApiDemo</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Context API Demo</name>
@@ -47,7 +47,7 @@
     -->
     <connection>scm:git:github.com:SelerityInc/${project.artifactId}.git</connection>
     <developerConnection>scm:git:git@github.com:SelerityInc/${project.artifactId}.git</developerConnection>
-    <tag>v0.0.1</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/SelerityInc/${project.artifactId}</url>
   </scm>
 
